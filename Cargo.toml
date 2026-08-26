@@ -1,0 +1,24 @@
+[package]
+name = "game-core"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+authors = ["Abraham Joongwhan Ahn"]
+description = "Deterministic, authoritative game-session primitives"
+license = "MIT"
+repository = "https://github.com/abrahamahn/game-core"
+homepage = "https://github.com/abrahamahn/game-core"
+readme = "README.md"
+keywords = ["game", "deterministic", "state-machine", "replay"]
+categories = ["game-development", "data-structures"]
+exclude = ["target/"]
+
+[lib]
+path = "src/lib.rs"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "deny"
+pedantic = "deny"
