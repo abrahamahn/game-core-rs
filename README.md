@@ -40,6 +40,8 @@ Current state + validated action + deterministic rules + injected randomness
 - A snapshot cannot represent a lifecycle/version/outcome combination the core could not produce.
 - Replay uses the same validation, lifecycle, version, transition, and randomness path as live play.
 - Rule meaning is pinned by a `GameDefinitionRef`, not by a mutable global name.
+- `SeededRandom` exposes opaque checkpoints so adapters can persist or restore an exact stream
+  position without depending on implementation fields.
 
 ## Basic usage
 

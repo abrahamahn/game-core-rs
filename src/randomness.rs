@@ -19,6 +19,17 @@ impl RandomSeed {
     }
 }
 
+/// Opaque position in the pinned seeded-random stream.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct RandomCheckpoint(u64);
+
+impl RandomCheckpoint {
+    #[must_use]
+    pub const fn get(self) -> u64 {
+        self.0
+    }
+}
+
 /// Small injected randomness boundary used by deterministic rules.
 pub trait RandomSource {
     fn next_u64(&mut self) -> u64;
@@ -53,6 +64,15 @@ impl SeededRandom {
     #[must_use]
     pub const fn new(seed: RandomSeed) -> Self {
         Self { state: seed.get() }
+    }
+
+    #[must_use]
+    pub const fn checkpoint(&self) -> RandomCheckpoint {
+        RandomCheckpoint(self.state)
+    }
+
+    pub const fn restore(&mut self, checkpoint: RandomCheckpoint) {
+        self.state = checkpoint.get();
     }
 }
 

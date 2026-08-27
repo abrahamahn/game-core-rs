@@ -185,6 +185,7 @@ fn invalid_action_and_version_conflict_do_not_mutate_state_or_randomness() {
     session.start(GameVersion::ZERO).unwrap();
     let before = session.snapshot();
     let mut random = SeededRandom::new(RandomSeed::new(8));
+    let checkpoint = random.checkpoint();
     let mut pristine = random;
 
     let wrong_version = GameAction::new(GameVersion::ZERO, None, Action::Advance);
@@ -202,6 +203,9 @@ fn invalid_action_and_version_conflict_do_not_mutate_state_or_randomness() {
 
     assert_eq!(session.snapshot(), before);
     assert_eq!(random.next_u64(), pristine.next_u64());
+    random.restore(checkpoint);
+    let mut restored = SeededRandom::new(RandomSeed::new(8));
+    assert_eq!(random.next_u64(), restored.next_u64());
 }
 
 #[test]

@@ -22,7 +22,8 @@ pub use participant::{
     Participant, ParticipantError, ParticipantId, ParticipantRoster, ParticipantStatus,
 };
 pub use randomness::{
-    RandomError, RandomSeed, RandomSource, SEEDED_RANDOM_ALGORITHM, SeededRandom, shuffle,
+    RandomCheckpoint, RandomError, RandomSeed, RandomSource, SEEDED_RANDOM_ALGORITHM, SeededRandom,
+    shuffle,
 };
 pub use replay::{ReplayExecutionResult, ReplayResult, replay, replay_from_snapshot};
 pub use session::{
