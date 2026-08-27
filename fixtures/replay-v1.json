@@ -1,0 +1,101 @@
+{
+  "profile": "game-core-replay-v1",
+  "seed": "42",
+  "definition": { "key": "conformance.race", "version": "1" },
+  "sessionId": "session-conformance",
+  "participant": "player-1",
+  "target": 6,
+  "actions": [
+    {
+      "expectedVersion": 1,
+      "actor": "player-1",
+      "accepted": true,
+      "version": 2,
+      "status": "active",
+      "turns": 1,
+      "total": 2,
+      "events": [{ "kind": "rolled", "value": 2, "total": 2 }]
+    },
+    {
+      "expectedVersion": 2,
+      "actor": "intruder",
+      "accepted": false,
+      "error": "NOT_ACTIVE_PARTICIPANT",
+      "version": 2,
+      "status": "active",
+      "turns": 1,
+      "total": 2,
+      "events": []
+    },
+    {
+      "expectedVersion": 2,
+      "actor": "player-1",
+      "accepted": true,
+      "version": 3,
+      "status": "active",
+      "turns": 2,
+      "total": 4,
+      "events": [{ "kind": "rolled", "value": 2, "total": 4 }]
+    },
+    {
+      "expectedVersion": 2,
+      "actor": "player-1",
+      "accepted": false,
+      "error": "GAME_VERSION_CONFLICT",
+      "version": 3,
+      "status": "active",
+      "turns": 2,
+      "total": 4,
+      "events": []
+    },
+    {
+      "expectedVersion": 3,
+      "actor": "player-1",
+      "accepted": true,
+      "version": 4,
+      "status": "active",
+      "turns": 3,
+      "total": 5,
+      "events": [{ "kind": "rolled", "value": 1, "total": 5 }],
+      "captureSnapshot": true
+    },
+    {
+      "expectedVersion": 4,
+      "actor": "player-1",
+      "accepted": true,
+      "version": 5,
+      "status": "finished",
+      "turns": 4,
+      "total": 6,
+      "events": [{ "kind": "rolled", "value": 1, "total": 6 }],
+      "outcome": { "winner": "player-1", "total": 6 }
+    },
+    {
+      "expectedVersion": 5,
+      "actor": "player-1",
+      "accepted": false,
+      "error": "GAME_INVALID_LIFECYCLE_TRANSITION",
+      "version": 5,
+      "status": "finished",
+      "turns": 4,
+      "total": 6,
+      "events": [],
+      "outcome": { "winner": "player-1", "total": 6 }
+    }
+  ],
+  "snapshot": {
+    "version": 4,
+    "status": "active",
+    "turns": 3,
+    "total": 5,
+    "randomCheckpoint": "15755400384260043881"
+  },
+  "final": {
+    "version": 5,
+    "status": "finished",
+    "turns": 4,
+    "total": 6,
+    "outcome": { "winner": "player-1", "total": 6 },
+    "randomCheckpoint": "8709371129873690750"
+  }
+}
