@@ -139,6 +139,16 @@ fn participant_lifecycle_preserves_identity_and_rejects_impossible_transitions()
         roster.leave(&participant),
         Err(ParticipantError::AlreadyLeft)
     );
+
+    assert!(ParticipantId::new("🂡".repeat(160)).is_ok());
+    assert_eq!(
+        ParticipantId::new("🂡".repeat(161)),
+        Err(ParticipantError::InvalidId)
+    );
+    assert_eq!(
+        ParticipantId::new("participant\u{85}control"),
+        Err(ParticipantError::InvalidId)
+    );
 }
 
 #[test]
@@ -226,6 +236,41 @@ fn snapshots_restore_authoritative_state_and_reject_impossible_combinations() {
             None,
         ),
         Err(SessionError::InvalidSnapshot)
+    );
+
+    let (maximum_state, _) = initial_state();
+    let maximum = GameSnapshot::<State, Outcome>::new(
+        session_ref(),
+        GameVersion::MAX_SAFE,
+        GameStatus::Active,
+        maximum_state,
+        None,
+    )
+    .unwrap();
+    let mut maximum_session = GameSession::restore(maximum).unwrap();
+    let mut maximum_random = SeededRandom::new(RandomSeed::new(7));
+    let checkpoint = maximum_random.checkpoint();
+    let exhausted = GameAction::new(GameVersion::MAX_SAFE, None, Action::Advance);
+    assert_eq!(
+        maximum_session.apply(&RaceRules, &exhausted, &mut maximum_random),
+        Err(GameExecutionError::Session(SessionError::VersionExhausted))
+    );
+    assert_eq!(maximum_random.checkpoint(), checkpoint);
+
+    let (unsafe_state, _) = initial_state();
+    assert_eq!(
+        GameSnapshot::<State, Outcome>::new(
+            session_ref(),
+            GameVersion::new(GameVersion::MAX_SAFE.get() + 1),
+            GameStatus::Active,
+            unsafe_state,
+            None,
+        ),
+        Err(SessionError::InvalidSnapshot)
+    );
+    assert_eq!(
+        GameVersion::try_new(GameVersion::MAX_SAFE.get() + 1),
+        Err(SessionError::VersionExhausted)
     );
 }
 

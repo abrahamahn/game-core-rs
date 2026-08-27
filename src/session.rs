@@ -8,10 +8,25 @@ pub struct GameVersion(u64);
 
 impl GameVersion {
     pub const ZERO: Self = Self(0);
+    /// Largest version represented exactly by both Rust and TypeScript implementations.
+    pub const MAX_SAFE: Self = Self(9_007_199_254_740_991);
 
     #[must_use]
     pub const fn new(value: u64) -> Self {
         Self(value)
+    }
+
+    /// Creates a version that can be represented exactly by both implementations.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SessionError::VersionExhausted`] above [`Self::MAX_SAFE`].
+    pub const fn try_new(value: u64) -> Result<Self, SessionError> {
+        if value > Self::MAX_SAFE.0 {
+            Err(SessionError::VersionExhausted)
+        } else {
+            Ok(Self(value))
+        }
     }
 
     #[must_use]
@@ -20,10 +35,10 @@ impl GameVersion {
     }
 
     fn next(self) -> Result<Self, SessionError> {
-        self.0
-            .checked_add(1)
-            .map(Self)
-            .ok_or(SessionError::VersionExhausted)
+        if self >= Self::MAX_SAFE {
+            return Err(SessionError::VersionExhausted);
+        }
+        Ok(Self(self.0 + 1))
     }
 }
 
@@ -433,11 +448,14 @@ impl<S, O> GameSnapshot<S, O> {
     }
 
     fn validate(&self) -> Result<(), SessionError> {
-        let valid = match self.status {
-            GameStatus::Created => self.version == GameVersion::ZERO && self.outcome.is_none(),
-            GameStatus::Active => self.version > GameVersion::ZERO && self.outcome.is_none(),
-            GameStatus::Finished => self.version > GameVersion::new(1) && self.outcome.is_some(),
-        };
+        let valid = self.version <= GameVersion::MAX_SAFE
+            && match self.status {
+                GameStatus::Created => self.version == GameVersion::ZERO && self.outcome.is_none(),
+                GameStatus::Active => self.version > GameVersion::ZERO && self.outcome.is_none(),
+                GameStatus::Finished => {
+                    self.version > GameVersion::new(1) && self.outcome.is_some()
+                }
+            };
         if !valid {
             return Err(SessionError::InvalidSnapshot);
         }

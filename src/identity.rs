@@ -1,6 +1,7 @@
 use std::fmt;
 
 const MAX_REFERENCE_LENGTH: usize = 160;
+const MAX_SAFE_INTEGER: u64 = 9_007_199_254_740_991;
 
 /// Validation failures for stable game-domain identities.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -202,7 +203,7 @@ impl GameResultId {
 pub struct GameResultRef {
     session: GameSessionRef,
     result_id: GameResultId,
-    version: u32,
+    version: u64,
 }
 
 impl GameResultRef {
@@ -210,13 +211,14 @@ impl GameResultRef {
     ///
     /// # Errors
     ///
-    /// Rejects malformed result identities and version zero.
+    /// Rejects malformed result identities and versions outside the positive safe-integer range
+    /// shared with TypeScript.
     pub fn new(
         session: GameSessionRef,
         result_id: impl Into<String>,
-        version: u32,
+        version: u64,
     ) -> IdentityResult<Self> {
-        if version == 0 {
+        if !(1..=MAX_SAFE_INTEGER).contains(&version) {
             return Err(IdentityError::InvalidResultVersion);
         }
         Ok(Self {
@@ -237,7 +239,7 @@ impl GameResultRef {
     }
 
     #[must_use]
-    pub const fn version(&self) -> u32 {
+    pub const fn version(&self) -> u64 {
         self.version
     }
 }
@@ -268,7 +270,7 @@ fn is_version(value: &str) -> bool {
 
 fn is_reference_id(value: &str) -> bool {
     !value.is_empty()
-        && value.len() <= MAX_REFERENCE_LENGTH
+        && value.chars().take(MAX_REFERENCE_LENGTH + 1).count() <= MAX_REFERENCE_LENGTH
         && value.trim() == value
         && !value.chars().any(char::is_control)
 }

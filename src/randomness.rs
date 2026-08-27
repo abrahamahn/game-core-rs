@@ -24,6 +24,12 @@ impl RandomSeed {
 pub struct RandomCheckpoint(u64);
 
 impl RandomCheckpoint {
+    /// Reconstructs a previously persisted checkpoint for the pinned seeded algorithm.
+    #[must_use]
+    pub const fn new(value: u64) -> Self {
+        Self(value)
+    }
+
     #[must_use]
     pub const fn get(self) -> u64 {
         self.0
