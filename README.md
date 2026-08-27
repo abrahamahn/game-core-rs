@@ -1,4 +1,7 @@
-# game-core
+# game-core-rs
+
+This repository contains only the `game-core` Rust crate and language-neutral JSON conformance
+fixtures. It has no npm, Node.js, or TypeScript build dependency.
 
 `game-core` is a small Rust library for deterministic, authoritative game sessions. It provides
 the mechanisms many games share while leaving every concrete game's state and rules in the
