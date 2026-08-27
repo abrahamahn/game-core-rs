@@ -16,7 +16,7 @@ impl ParticipantId {
     pub fn new(value: impl Into<String>) -> Result<Self, ParticipantError> {
         let value = value.into();
         if value.is_empty()
-            || value.len() > MAX_PARTICIPANT_ID_LENGTH
+            || value.chars().take(MAX_PARTICIPANT_ID_LENGTH + 1).count() > MAX_PARTICIPANT_ID_LENGTH
             || value.trim() != value
             || value.chars().any(char::is_control)
         {

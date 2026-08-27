@@ -1,7 +1,7 @@
 use game_core::{
     ActionContext, GameAction, GameDefinitionRef, GameRules, GameSessionRef, GameStatus,
-    GameVersion, RandomSeed, RandomSource, SEEDED_RANDOM_ALGORITHM, SeededRandom, Transition,
-    replay, replay_from_snapshot,
+    GameVersion, RandomCheckpoint, RandomSeed, RandomSource, SEEDED_RANDOM_ALGORITHM, SeededRandom,
+    Transition, replay, replay_from_snapshot,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -83,6 +83,17 @@ fn seeded_randomness_is_versioned_and_stable() {
     assert_eq!(random.next_u64(), 0x6e78_9e6a_a1b9_65f4);
     assert_eq!(random.next_u64(), 0x06c4_5d18_8009_454f);
     assert!(random.next_index(0).is_err());
+}
+
+#[test]
+fn a_persisted_checkpoint_restores_a_new_seeded_stream() {
+    let mut original = SeededRandom::new(RandomSeed::new(91));
+    original.next_u64();
+    let persisted = original.checkpoint().get();
+
+    let mut restored = SeededRandom::new(RandomSeed::new(0));
+    restored.restore(RandomCheckpoint::new(persisted));
+    assert_eq!(restored.next_u64(), original.next_u64());
 }
 
 #[test]

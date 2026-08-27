@@ -37,3 +37,29 @@ fn malformed_identifiers_fail_closed() {
         Err(IdentityError::InvalidSessionId)
     );
 }
+
+#[test]
+fn opaque_identity_and_result_version_bounds_match_typescript() {
+    let definition = GameDefinitionRef::new("board.strategy", "v1").unwrap();
+    let session = GameSessionRef::new(definition, "🂡".repeat(160)).unwrap();
+    assert_eq!(session.session_id().as_str().chars().count(), 160);
+
+    let definition = GameDefinitionRef::new("board.strategy", "v1").unwrap();
+    assert_eq!(
+        GameSessionRef::new(definition, "🂡".repeat(161)),
+        Err(IdentityError::InvalidSessionId)
+    );
+    let definition = GameDefinitionRef::new("board.strategy", "v1").unwrap();
+    assert_eq!(
+        GameSessionRef::new(definition, "session\u{85}control"),
+        Err(IdentityError::InvalidSessionId)
+    );
+
+    let definition = GameDefinitionRef::new("board.strategy", "v1").unwrap();
+    let session = GameSessionRef::new(definition, "session-1").unwrap();
+    assert!(GameResultRef::new(session.clone(), "result-1", 9_007_199_254_740_991).is_ok());
+    assert_eq!(
+        GameResultRef::new(session, "result-1", 9_007_199_254_740_992),
+        Err(IdentityError::InvalidResultVersion)
+    );
+}

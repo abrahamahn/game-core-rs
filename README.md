@@ -8,6 +8,11 @@ It is not a game implementation, lobby, network protocol, persistence layer, mat
 UI framework, economy, or random-number service. It contains no rules for any particular card,
 board, simulation, or competitive game.
 
+This crate is a reusable mechanics package, not a universal game bounded context. Consumers should
+adopt the session lifecycle only when its meaning matches their occurrence exactly; Blackjack,
+Baccarat, Poker, Rooms, tournaments, fairness provenance, settlement, and presentation retain
+their own domain authority.
+
 ## Responsibilities
 
 The library owns:
