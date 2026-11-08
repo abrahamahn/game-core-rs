@@ -1,6 +1,9 @@
 use std::fmt;
 
-use crate::{GameSessionRef, ParticipantId, RandomSource};
+use crate::identity::{GameSessionRef, MAX_SAFE_INTEGER};
+use crate::randomness::RandomSource;
+use crate::rules::{ActionContext, AppliedTransition, GameAction, GameRules, Transition};
+use crate::snapshot::GameSnapshot;
 
 /// Monotonic optimistic-concurrency version of authoritative session state.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -9,7 +12,7 @@ pub struct GameVersion(u64);
 impl GameVersion {
     pub const ZERO: Self = Self(0);
     /// Largest version represented exactly by both Rust and TypeScript implementations.
-    pub const MAX_SAFE: Self = Self(9_007_199_254_740_991);
+    pub const MAX_SAFE: Self = Self(MAX_SAFE_INTEGER);
 
     #[must_use]
     pub const fn new(value: u64) -> Self {
@@ -54,171 +57,6 @@ pub enum GameStatus {
 pub enum LifecycleOperation {
     Start,
     ApplyAction,
-}
-
-/// An authoritative command with an optimistic version precondition.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct GameAction<A> {
-    expected_version: GameVersion,
-    actor: Option<ParticipantId>,
-    payload: A,
-}
-
-impl<A> GameAction<A> {
-    #[must_use]
-    pub const fn new(
-        expected_version: GameVersion,
-        actor: Option<ParticipantId>,
-        payload: A,
-    ) -> Self {
-        Self {
-            expected_version,
-            actor,
-            payload,
-        }
-    }
-
-    #[must_use]
-    pub const fn expected_version(&self) -> GameVersion {
-        self.expected_version
-    }
-
-    #[must_use]
-    pub const fn actor(&self) -> Option<&ParticipantId> {
-        self.actor.as_ref()
-    }
-
-    #[must_use]
-    pub const fn payload(&self) -> &A {
-        &self.payload
-    }
-
-    #[must_use]
-    pub fn into_payload(self) -> A {
-        self.payload
-    }
-}
-
-/// Read-only facts available to rule validation and transition execution.
-#[derive(Clone, Copy, Debug)]
-pub struct ActionContext<'a> {
-    session: &'a GameSessionRef,
-    actor: Option<&'a ParticipantId>,
-    version: GameVersion,
-}
-
-impl<'a> ActionContext<'a> {
-    #[must_use]
-    pub const fn session(&self) -> &'a GameSessionRef {
-        self.session
-    }
-
-    #[must_use]
-    pub const fn actor(&self) -> Option<&'a ParticipantId> {
-        self.actor
-    }
-
-    #[must_use]
-    pub const fn version(&self) -> GameVersion {
-        self.version
-    }
-}
-
-/// Accepted domain transition: new state, ordered events, and optional terminal outcome.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Transition<S, E, O> {
-    state: S,
-    events: Vec<E>,
-    outcome: Option<O>,
-}
-
-impl<S, E, O> Transition<S, E, O> {
-    #[must_use]
-    pub fn continue_with(state: S, events: Vec<E>) -> Self {
-        Self {
-            state,
-            events,
-            outcome: None,
-        }
-    }
-
-    #[must_use]
-    pub fn finish(state: S, events: Vec<E>, outcome: O) -> Self {
-        Self {
-            state,
-            events,
-            outcome: Some(outcome),
-        }
-    }
-}
-
-/// Rules supplied by a concrete game domain.
-///
-/// Validation cannot consume randomness. Once validation succeeds,
-/// `transition` is infallible and must deterministically return the next state
-/// for the supplied state, action, and random stream.
-pub trait GameRules {
-    type State;
-    type Action;
-    type Event;
-    type Outcome;
-    type Error;
-
-    /// Validates actor authorization and game-specific action legality.
-    ///
-    /// # Errors
-    ///
-    /// Returns a domain error without changing state or consuming randomness.
-    fn validate(
-        &self,
-        context: &ActionContext<'_>,
-        state: &Self::State,
-        action: &Self::Action,
-    ) -> Result<(), Self::Error>;
-
-    fn transition(
-        &self,
-        context: &ActionContext<'_>,
-        state: &Self::State,
-        action: &Self::Action,
-        random: &mut dyn RandomSource,
-    ) -> Transition<Self::State, Self::Event, Self::Outcome>;
-}
-
-/// Events and authoritative version produced by one accepted action.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AppliedTransition<E> {
-    prior_version: GameVersion,
-    next_version: GameVersion,
-    status: GameStatus,
-    events: Vec<E>,
-}
-
-impl<E> AppliedTransition<E> {
-    #[must_use]
-    pub const fn prior_version(&self) -> GameVersion {
-        self.prior_version
-    }
-
-    #[must_use]
-    pub const fn next_version(&self) -> GameVersion {
-        self.next_version
-    }
-
-    #[must_use]
-    pub const fn status(&self) -> GameStatus {
-        self.status
-    }
-
-    #[must_use]
-    pub fn events(&self) -> &[E] {
-        &self.events
-    }
-
-    #[must_use]
-    pub fn into_events(self) -> Vec<E> {
-        self.events
-    }
 }
 
 /// Authoritative in-memory session aggregate, independent of storage and transport.
@@ -385,81 +223,6 @@ impl<S: Clone, O: Clone> GameSession<S, O> {
             state: self.state.clone(),
             outcome: self.outcome.clone(),
         }
-    }
-}
-
-/// Storage-neutral snapshot. Serialization is deliberately adapter-owned.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct GameSnapshot<S, O> {
-    reference: GameSessionRef,
-    version: GameVersion,
-    status: GameStatus,
-    state: S,
-    outcome: Option<O>,
-}
-
-impl<S, O> GameSnapshot<S, O> {
-    /// Creates a snapshot at a serialization boundary.
-    ///
-    /// # Errors
-    ///
-    /// Rejects lifecycle/version/outcome combinations the core cannot produce.
-    pub fn new(
-        reference: GameSessionRef,
-        version: GameVersion,
-        status: GameStatus,
-        state: S,
-        outcome: Option<O>,
-    ) -> Result<Self, SessionError> {
-        let snapshot = Self {
-            reference,
-            version,
-            status,
-            state,
-            outcome,
-        };
-        snapshot.validate()?;
-        Ok(snapshot)
-    }
-
-    #[must_use]
-    pub const fn reference(&self) -> &GameSessionRef {
-        &self.reference
-    }
-
-    #[must_use]
-    pub const fn version(&self) -> GameVersion {
-        self.version
-    }
-
-    #[must_use]
-    pub const fn status(&self) -> GameStatus {
-        self.status
-    }
-
-    #[must_use]
-    pub const fn state(&self) -> &S {
-        &self.state
-    }
-
-    #[must_use]
-    pub const fn outcome(&self) -> Option<&O> {
-        self.outcome.as_ref()
-    }
-
-    fn validate(&self) -> Result<(), SessionError> {
-        let valid = self.version <= GameVersion::MAX_SAFE
-            && match self.status {
-                GameStatus::Created => self.version == GameVersion::ZERO && self.outcome.is_none(),
-                GameStatus::Active => self.version > GameVersion::ZERO && self.outcome.is_none(),
-                GameStatus::Finished => {
-                    self.version > GameVersion::new(1) && self.outcome.is_some()
-                }
-            };
-        if !valid {
-            return Err(SessionError::InvalidSnapshot);
-        }
-        Ok(())
     }
 }
 

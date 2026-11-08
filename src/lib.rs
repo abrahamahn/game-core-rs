@@ -12,7 +12,9 @@ mod identity;
 mod participant;
 mod randomness;
 mod replay;
+mod rules;
 mod session;
+mod snapshot;
 
 pub use identity::{
     GameDefinitionKey, GameDefinitionRef, GameDefinitionVersion, GameResultId, GameResultRef,
@@ -26,7 +28,8 @@ pub use randomness::{
     shuffle,
 };
 pub use replay::{ReplayExecutionResult, ReplayResult, replay, replay_from_snapshot};
+pub use rules::{ActionContext, AppliedTransition, GameAction, GameRules, Transition};
 pub use session::{
-    ActionContext, AppliedTransition, GameAction, GameExecutionError, GameRules, GameSession,
-    GameSnapshot, GameStatus, GameVersion, LifecycleOperation, SessionError, Transition,
+    GameExecutionError, GameSession, GameStatus, GameVersion, LifecycleOperation, SessionError,
 };
+pub use snapshot::GameSnapshot;

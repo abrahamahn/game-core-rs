@@ -1,7 +1,8 @@
-use crate::{
-    AppliedTransition, GameAction, GameExecutionError, GameRules, GameSession, GameSessionRef,
-    GameSnapshot, GameVersion, RandomSource,
-};
+use crate::identity::GameSessionRef;
+use crate::randomness::RandomSource;
+use crate::rules::{AppliedTransition, GameAction, GameRules};
+use crate::session::{GameExecutionError, GameSession, GameVersion};
+use crate::snapshot::GameSnapshot;
 
 /// Reconstructed authoritative state and the transitions generated while replaying.
 #[derive(Clone, Debug, Eq, PartialEq)]

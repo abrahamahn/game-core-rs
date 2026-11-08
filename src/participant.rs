@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
-const MAX_PARTICIPANT_ID_LENGTH: usize = 160;
+use crate::identity::is_reference_id;
 
 /// Stable identity for a participant in a game domain.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -15,11 +15,7 @@ impl ParticipantId {
     /// Rejects empty, untrimmed, control-bearing, or oversized identifiers.
     pub fn new(value: impl Into<String>) -> Result<Self, ParticipantError> {
         let value = value.into();
-        if value.is_empty()
-            || value.chars().take(MAX_PARTICIPANT_ID_LENGTH + 1).count() > MAX_PARTICIPANT_ID_LENGTH
-            || value.trim() != value
-            || value.chars().any(char::is_control)
-        {
+        if !is_reference_id(&value) {
             return Err(ParticipantError::InvalidId);
         }
         Ok(Self(value))

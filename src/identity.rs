@@ -1,7 +1,7 @@
 use std::fmt;
 
 const MAX_REFERENCE_LENGTH: usize = 160;
-const MAX_SAFE_INTEGER: u64 = 9_007_199_254_740_991;
+pub(crate) const MAX_SAFE_INTEGER: u64 = 9_007_199_254_740_991;
 
 /// Validation failures for stable game-domain identities.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -268,7 +268,7 @@ fn is_version(value: &str) -> bool {
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'))
 }
 
-fn is_reference_id(value: &str) -> bool {
+pub(crate) fn is_reference_id(value: &str) -> bool {
     !value.is_empty()
         && value.chars().take(MAX_REFERENCE_LENGTH + 1).count() <= MAX_REFERENCE_LENGTH
         && value.trim() == value
